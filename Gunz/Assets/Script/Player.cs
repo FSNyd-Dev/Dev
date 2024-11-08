@@ -1,7 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -9,7 +5,12 @@ public class Player : MonoBehaviour
     public Animator playerAnim;
     public Rigidbody playerrRigid;
     public float walkSpeed;
+    public float dashSpeed;
     public Transform playerTrans;
+
+    private float lastTapTime;
+    private const float doubleTapDelay = 0.5f;
+    public bool isDashing = false;
 
     void Start()
     {
@@ -39,7 +40,17 @@ public class Player : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.W))
             {
-                playerrRigid.velocity = transform.forward * walkSpeed * Time.deltaTime;
+                if (Time.time - lastTapTime < doubleTapDelay && !isDashing)
+                {
+                    Vector3 forceToApply = (transform.forward * (walkSpeed+ dashSpeed*100)) * Time.deltaTime;
+                    playerrRigid.AddForce(forceToApply, ForceMode.Impulse);
+                    isDashing = true;
+                    Invoke(nameof(DashStateChg), 0.5f);
+                }
+                else
+                {
+                    playerrRigid.velocity = transform.forward * walkSpeed * Time.deltaTime;
+                }
             }
 
             if (Input.GetKey(KeyCode.S))
@@ -64,11 +75,20 @@ public class Player : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.W))
         {
-            playerAnim.SetTrigger("forward");
+            if (isDashing)
+            {
+                playerAnim.SetTrigger("forwardDash");
+            }
+            else
+            {
+                playerAnim.SetTrigger("forward");
+            }
             playerAnim.ResetTrigger("idle");
         }
         if (Input.GetKeyUp(KeyCode.W))
         {
+            lastTapTime = Time.time;
+
             playerAnim.ResetTrigger("forward");
 
             if(!Input.anyKey)
@@ -137,5 +157,20 @@ public class Player : MonoBehaviour
             else
                 playerAnim.ResetTrigger("idle");
         }
+    }
+
+    public void DashStateChg()
+    {
+        print("DashStateChg");
+        isDashing = false;
+
+        playerAnim.ResetTrigger("forwardDash");
+        playerAnim.SetTrigger("idle");
+    }
+
+    public void DashStateTest()
+    {
+        print("DashStateTest");
+       
     }
 }
